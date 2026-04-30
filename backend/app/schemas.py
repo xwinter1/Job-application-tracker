@@ -24,6 +24,12 @@ class JobCreate(BaseModel):
     status: StatusEnum = StatusEnum.applied
     notes: Optional[str] = None
 
+class JobUpdate(BaseModel):
+    company: Optional[str] = None
+    role: Optional[str] = None
+    status: Optional[StatusEnum] = None
+    notes: Optional[str] = None
+
 class JobOut(JobCreate):
     id: int
     applied_date: datetime

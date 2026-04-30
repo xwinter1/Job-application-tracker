@@ -3,21 +3,43 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isLoggedIn } from "@/lib/auth";
-import { useGetJobs, useDeleteJob } from "@/hooks/useJobs";
+import { useGetJobs, useDeleteJob, Job } from "@/hooks/useJobs";
 import Navbar from "@/components/Navbar";
 import JobCard from "@/components/JobCard";
 import AddJobModal from "@/components/AddJobModal";
-import { Plus } from "lucide-react";
+import SkeletonCard from "@/components/SkeletonCard";
+import EmptyState from "@/components/EmptyState";
+import StatusFilter from "@/components/StatusFilter";
+import { Plus, Search } from "lucide-react";
+
+type FilterStatus = "all" | Job["status"];
 
 export default function DashboardPage() {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
+  const [filter, setFilter] = useState<FilterStatus>("all");
+  const [search, setSearch] = useState("");
   const { data: jobs, isLoading } = useGetJobs();
   const { mutate: deleteJob } = useDeleteJob();
 
-  useEffect(() => {
-    if (!isLoggedIn()) router.push("/login");
-  }, [router]);
+  const [mounted, setMounted] = useState(false);
+
+useEffect(() => {
+  setMounted(true);
+}, []);
+
+useEffect(() => {
+  if (!mounted) return;
+  if (!isLoggedIn()) router.push("/login");
+}, [mounted, router]);
+
+  const filtered = jobs?.filter((job) => {
+    const matchesStatus = filter === "all" || job.status === filter;
+    const matchesSearch =
+      job.company.toLowerCase().includes(search.toLowerCase()) ||
+      job.role.toLowerCase().includes(search.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
 
   const stats = {
     total: jobs?.length ?? 0,
@@ -57,22 +79,30 @@ export default function DashboardPage() {
           </button>
         </div>
 
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by company or role..."
+            className="w-full bg-slate-900 border border-slate-800 text-white rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+          />
+        </div>
+
+        {/* Filter */}
+        <StatusFilter active={filter} onChange={(s) => setFilter(s)} />
+
         {/* Job List */}
         {isLoading ? (
-          <div className="text-slate-400 text-center py-16">Loading...</div>
-        ) : jobs?.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-slate-400 mb-4">No applications yet.</p>
-            <button
-              onClick={() => setShowModal(true)}
-              className="text-blue-400 hover:text-blue-300 text-sm underline"
-            >
-              Add your first job
-            </button>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
+        ) : filtered?.length === 0 ? (
+          <EmptyState onAdd={() => setShowModal(true)} />
         ) : (
           <div className="space-y-3">
-            {jobs?.map((job) => (
+            {filtered?.map((job) => (
               <JobCard key={job.id} job={job} onDelete={deleteJob} />
             ))}
           </div>

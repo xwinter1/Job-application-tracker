@@ -12,11 +12,25 @@ def get_jobs(db: Session = Depends(get_db), current_user: models.User = Depends(
 
 @router.post("/", response_model=schemas.JobOut)
 def create_job(job: schemas.JobCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
-    new_job = models.Job(**job.dict(), owner_id=current_user.id)
+    job_data = job.dict()
+    if not job_data.get("notes"):
+        job_data["notes"] = None
+    new_job = models.Job(**job_data, owner_id=current_user.id)
     db.add(new_job)
     db.commit()
     db.refresh(new_job)
     return new_job
+
+@router.patch("/{job_id}", response_model=schemas.JobOut)
+def update_job(job_id: int, updates: schemas.JobUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    job = db.query(models.Job).filter(models.Job.id == job_id, models.Job.owner_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    for key, value in updates.dict(exclude_unset=True).items():
+        setattr(job, key, value)
+    db.commit()
+    db.refresh(job)
+    return job
 
 @router.delete("/{job_id}")
 def delete_job(job_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
