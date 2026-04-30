@@ -2,13 +2,13 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from .database import Base
-import enum 
+import enum
 
-class StatusEnum(enum.Enum):
-   applied = "applied"
-   interview = "interview"
-   offer = "offer"
-   rejected = "rejected"
+class StatusEnum(str, enum.Enum):
+    applied = "applied"
+    interview = "interview"
+    offer = "offer"
+    rejected = "rejected"
 
 class User(Base):
     __tablename__ = "users"
@@ -23,10 +23,10 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True, nullable=False)
-    company = Column(String, index=True, nullable=False)
-    location = Column(String, index=True, nullable=False)
+    company = Column(String, nullable=False)
+    role = Column(String, nullable=False)
     status = Column(Enum(StatusEnum), default=StatusEnum.applied)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    applied_date = Column(DateTime(timezone=True), server_default=func.now())
+    notes = Column(String, nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="jobs")

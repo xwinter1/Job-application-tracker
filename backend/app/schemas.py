@@ -18,17 +18,15 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-class JobCreate(BaseModel):    
-    title: str
+class JobCreate(BaseModel):
     company: str
-    location: str
-    status: Optional[StatusEnum] = StatusEnum.applied
+    role: str
+    status: StatusEnum = StatusEnum.applied
     notes: Optional[str] = None
 
 class JobOut(JobCreate):
     id: int
-    created_at: datetime
+    applied_date: datetime
     owner_id: int
     class Config:
         from_attributes = True
-
